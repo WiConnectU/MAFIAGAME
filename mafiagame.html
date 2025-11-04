@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mafia — Discover the Truth</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cormorant+Garamond:wght@300;500;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg1:#07090b;
+      --bg2:#111417;
+      --accent:#d4af37;
+      --muted:#9aa4b2;
+      --glass: rgba(255,255,255,0.03);
+      --card: rgba(255,255,255,0.025);
+      --surface: rgba(255,255,255,0.02);
+      --radius:18px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial; background:linear-gradient(160deg,var(--bg1), var(--bg2)); color:#e8eef6;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+
+    .container{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px}
+    .app{width:100%;max-width:980px;min-height:640px;border-radius:var(--radius);padding:36px;backdrop-filter: blur(8px);box-shadow:0 18px 60px rgba(2,6,12,0.75), inset 0 1px 0 rgba(255,255,255,0.02);background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.008));display:flex;flex-direction:column;gap:20px}
+
+    /* Landing */
+    .landing{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:48px 10px;text-align:center}
+    .title{font-family:'Cinzel Decorative', 'Cormorant Garamond', serif;font-size:clamp(34px,7vw,64px);letter-spacing:3px;color:var(--accent);text-shadow:0 10px 28px rgba(0,0,0,0.6)}
+    .subtitle{font-size:15px;color:var(--muted);margin-top:-4px}
+
+    .gun-btn{width:104px;height:104px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.03);cursor:pointer;transition:transform .16s, box-shadow .16s;box-shadow:0 8px 20px rgba(0,0,0,0.45)}
+    .gun-btn:active{transform:scale(.98)}
+    .gun-img{width:56px;height:56px;object-fit:contain}
+
+    /* Pages */
+    .page{display:none;flex-direction:column;gap:16px}
+    .page.active{display:flex}
+
+    /* Card */
+    .card{background:var(--card);padding:20px;border-radius:12px;border:1px solid rgba(255,255,255,0.03)}
+
+    /* Setup */
+    .row{display:flex;gap:14px;align-items:center}
+    label{font-size:14px;color:var(--muted);display:block}
+    input[type=number]{width:96px;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit;font-weight:600}
+    .names{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:12px}
+    @media(max-width:640px){.names{grid-template-columns:1fr}}
+    input[type=text]{width:100%;padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,0.05);background:transparent;color:inherit;font-size:15px}
+    .controls{display:flex;justify-content:space-between;align-items:center;margin-top:12px}
+    .btn{padding:12px 16px;border-radius:12px;border:none;background:var(--accent);color:#071017;font-weight:700;cursor:pointer;letter-spacing:0.6px}
+    .btn.ghost{background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,0.03)}
+
+    /* Reveal stage */
+    .stage{flex:1;display:grid;place-items:center;text-align:center;padding:22px;border-radius:12px}
+    .big-text{font-family:'Cormorant Garamond', serif;font-size:clamp(26px,6vw,56px);font-weight:700}
+    .role-text{font-size:clamp(18px,4.5vw,34px);margin-top:14px;font-weight:700}
+    .hint{font-size:13px;color:var(--muted);margin-top:10px}
+
+    /* Checklist */
+    .checklist{display:flex;flex-direction:column;gap:10px;padding:8px;margin-top:12px}
+    .player-row{display:flex;justify-content:space-between;padding:14px;border-radius:10px;background:rgba(255,255,255,0.02);align-items:center}
+    .role-pill{font-size:13px;padding:6px 12px;border-radius:999px;font-weight:700}
+    .mafia{color:#fff;background:rgba(255,40,40,0.12);border-left:4px solid #ff4b4b}
+    .sheriff{color:#fff;background:rgba(60,140,255,0.06);border-left:4px solid #3b82f6}
+    .nurse{color:#fff;background:rgba(40,220,120,0.06);border-left:4px solid #22c55e}
+    .citizen{color:var(--muted)}
+
+    footer{display:flex;justify-content:space-between;align-items:center;margin-top:6px}
+    .small{font-size:12px;color:var(--muted)}
+
+    /* subtle animations */
+    .fade-in{animation:fadeIn .28s ease both}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  </style>
+</head>
+<body>
+  <div class="container">
+  <div class="app" role="application">
+    <!-- Landing -->
+    <section id="landing" class="landing page active">
+      <div>
+        <div class="title">DISCOVER THE TRUTH</div>
+        <div class="subtitle">a narrator's assistant for the game Mafia</div>
+      </div>
+
+      <button class="gun-btn" id="startBtn" title="Begin">
+        <!-- external PNG gun icon - place gunicon.png next to this HTML file -->
+        <img src="gunicon.png" alt="gun icon" class="gun-img" onerror="this.style.opacity=.5">
+      </button>
+
+      <div class="small">Tap the gun to assign roles</div>
+    </section>
+
+    <!-- Setup -->
+    <section id="setup" class="page">
+      <div class="card fade-in">
+        <div class="row" style="justify-content:space-between;align-items:center;">
+          <div>
+            <label for="playerCount">Number of players</label>
+            <div style="height:8px"></div>
+            <input id="playerCount" type="number" min="5" max="30" value="5" aria-label="number of players">
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:13px;color:var(--muted)">Roles: 1 Mafia · 1 Sheriff · 1 Nurse · Citizens</div>
+            <div style="height:6px"></div>
+            <button id="generateNames" class="btn">Create name fields</button>
+          </div>
+        </div>
+      </div>
+
+      <form id="namesForm" class="card" onsubmit="return false;">
+        <div id="namesContainer" class="names" aria-live="polite"></div>
+        <div style="display:flex;justify-content:flex-end;margin-top:12px">
+          <button id="enterBtn" class="btn" type="submit">Enter</button>
+        </div>
+      </form>
+
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div class="small">Make sure every player has a unique name (or nickname)</div>
+        <button class="btn ghost" id="backToLanding">Back</button>
+      </div>
+    </section>
+
+    <!-- Reveal Stage -->
+    <section id="reveal" class="page">
+      <div class="stage card" id="stageCard" role="button" tabindex="0" aria-label="Narrator stage — tap to reveal" >
+        <div class="big-text" id="bigText">NARRATOR... discover the players.</div>
+        <div class="role-text" id="roleText" style="opacity:.95"></div>
+        <div class="hint">Tap anywhere on this card to show a name, then tap again to reveal role.</div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div class="small">Progress: <span id="progressCount">0 / 0</span></div>
+        <div style="display:flex;gap:10px">
+          <button id="revealListBtn" class="btn ghost">Reveal checklist</button>
+          <button id="restartBtn" class="btn">Restart</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Checklist -->
+    <section id="checklist" class="page">
+      <div class="card">
+        <div class="big-text">LET THE NIGHT FALL.</div>
+        <div class="hint">Tap "Show full list" to display all players and their roles.</div>
+        <div style="height:12px"></div>
+        <div id="fullList" class="checklist" aria-live="polite"></div>
+        <div style="display:flex;justify-content:space-between;margin-top:12px;align-items:center">
+          <div class="small">Colors: <span style="color:#ff4b4b">Mafia</span> · <span style="color:#3b82f6">Sheriff</span> · <span style="color:#22c55e">Nurse</span></div>
+          <div style="display:flex;gap:8px">
+            <button id="showListBtn" class="btn ghost">Show full list</button>
+            <button id="finalRestart" class="btn">New game</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer style="margin-top:auto">
+      <div class="small">Built for Procastinators</div>
+    </footer>
+  </div>
+  </div>
+
+<script>
+// ---- App state ----
+let players = []; // {name, role}
+let order = []; // indices in reveal order
+let currentIndex = -1; // which player we are on in order
+let phase = 'idle'; // 'idle' | 'nameShown' | 'roleShown' | 'done'
+
+const landing = document.getElementById('landing');
+const setup = document.getElementById('setup');
+const reveal = document.getElementById('reveal');
+const checklist = document.getElementById('checklist');
+
+const startBtn = document.getElementById('startBtn');
+const generateNames = document.getElementById('generateNames');
+const playerCountInput = document.getElementById('playerCount');
+const namesContainer = document.getElementById('namesContainer');
+const enterBtn = document.getElementById('enterBtn');
+const backToLanding = document.getElementById('backToLanding');
+const stageCard = document.getElementById('stageCard');
+const bigText = document.getElementById('bigText');
+const roleText = document.getElementById('roleText');
+const progressCount = document.getElementById('progressCount');
+const revealListBtn = document.getElementById('revealListBtn');
+const restartBtn = document.getElementById('restartBtn');
+const showListBtn = document.getElementById('showListBtn');
+const finalRestart = document.getElementById('finalRestart');
+const fullList = document.getElementById('fullList');
+
+// helpers
+function showPage(el){[landing,setup,reveal,checklist].forEach(p=>p.classList.remove('active'));el.classList.add('active');window.scrollTo({top:0,behavior:'smooth'});}
+
+function createNameFields(count){namesContainer.innerHTML='';for(let i=0;i<count;i++){const wrapper=document.createElement('div');const input=document.createElement('input');input.type='text';input.placeholder='Player '+(i+1);input.id='p-'+i;input.required=true;input.autocomplete='off';wrapper.appendChild(input);namesContainer.appendChild(wrapper);} }
+
+function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}return arr}
+
+// landing -> setup
+startBtn.addEventListener('click',()=>{showPage(setup);createNameFields(parseInt(playerCountInput.value||5));});
+backToLanding.addEventListener('click',()=>{showPage(landing);});
+
+// generate name fields on count change
+generateNames.addEventListener('click',()=>{let c=parseInt(playerCountInput.value)||5;if(c<5){alert('Minimum players is 5');playerCountInput.value=5;c=5;}if(c>30){alert('Maximum is 30');playerCountInput.value=30;c=30;}createNameFields(c);});
+
+// initial fields
+createNameFields(parseInt(playerCountInput.value||5));
+
+// Enter: validate and assign roles
+enterBtn.addEventListener('click',()=>{
+  const inputs = Array.from(namesContainer.querySelectorAll('input'));
+  const names = inputs.map(i=>i.value.trim()).filter(x=>x.length>0);
+  if(names.length < 5){alert('Please enter at least 5 names'); return;}
+  if(names.length !== inputs.length){if(!confirm('Some name fields are empty. Continue with filled names only?')) return;}
+
+  // unique names check (not mandatory but helpful)
+  const dup = names.find((n,idx)=>names.indexOf(n)!==idx);
+  if(dup){if(!confirm('Duplicate name detected: "'+dup+'". Continue anyway?')) return;}
+
+  setupRoles(names);
+  showRevealStage();
+});
+
+function setupRoles(names){
+  // ensure we always have 1 mafia,1 sheriff,1 nurse. Rest citizens
+  // pick 3 distinct indices randomly
+  const n = names.length;
+  const idxs = shuffle([...Array(n).keys()]);
+  const mafiaIdx = idxs[0];
+  const sheriffIdx = idxs[1];
+  const nurseIdx = idxs[2];
+
+  players = names.map((nm,i)=>({name:nm,role: 'Citizen'}));
+  players[mafiaIdx].role = 'Mafia';
+  players[sheriffIdx].role = 'Sheriff';
+  players[nurseIdx].role = 'Nurse';
+
+  // shuffle reveal order so revealing is random and fair
+  order = shuffle([...Array(n).keys()]);
+}
+
+function showRevealStage(){
+  currentIndex = -1; phase = 'idle';
+  bigText.textContent = 'NARRATOR... discover the players.';
+  roleText.textContent = '';
+  progressCount.textContent = `0 / ${players.length}`;
+  showPage(reveal);
+}
+
+// clicking the stage
+stageCard.addEventListener('click',handleStageClick);
+stageCard.addEventListener('keydown',(e)=>{if(e.key==='Enter' || e.key===' ') {e.preventDefault(); handleStageClick();}});
+
+function handleStageClick(){
+  if(!players.length) return;
+  if(phase === 'idle'){
+    // move to first player's name
+    currentIndex = 0; showPlayerName(); phase = 'nameShown';
+    return;
+  }
+  if(phase === 'nameShown'){
+    // reveal role for current player
+    revealRole(); phase = 'roleShown';
+    return;
+  }
+  if(phase === 'roleShown'){
+    // advance to next player or finish
+    currentIndex++;
+    if(currentIndex >= order.length){
+      // finished all
+      bigText.textContent = 'LET THE NIGHT FALL.';
+      roleText.textContent = '';
+      phase = 'done';
+      progressCount.textContent = `${order.length} / ${players.length}`;
+      return;
+    }
+    // show next player's name
+    showPlayerName(); phase = 'nameShown';
+    return;
+  }
+  if(phase === 'done'){
+    // show checklist when tapping after done
+    buildFullList(); showPage(checklist);
+    return;
+  }
+}
+
+function showPlayerName(){
+  const idx = order[currentIndex];
+  const p = players[idx];
+  bigText.textContent = p.name;
+  roleText.textContent = '';
+  animatePulse(bigText);
+  progressCount.textContent = `${Math.min(currentIndex+1, players.length)} / ${players.length}`;
+}
+
+function revealRole(){
+  const idx = order[currentIndex];
+  const p = players[idx];
+  roleText.textContent = p.role;
+  // style role text color
+  roleText.style.color = p.role === 'Mafia' ? '#ff4b4b' : p.role === 'Sheriff' ? '#3b82f6' : p.role === 'Nurse' ? '#22c55e' : '#f5d742';
+  animatePulse(roleText);
+}
+
+function animatePulse(el){el.animate([{transform:'scale(1)', opacity:0.92},{transform:'scale(1.02)',opacity:1}],{duration:160,fill:'forwards'});}
+
+// reveal list buttons
+revealListBtn.addEventListener('click',()=>{buildFullList();showPage(checklist);});
+showListBtn.addEventListener('click',()=>{buildFullList();});
+
+function buildFullList(){
+  fullList.innerHTML = '';
+  // keep original players order for clarity
+  players.forEach(p=>{
+    const row = document.createElement('div');row.className='player-row';
+    const left = document.createElement('div');left.textContent = p.name;left.style.fontWeight='600';
+    const right = document.createElement('div');
+    const pill = document.createElement('div');pill.className='role-pill';
+    if(p.role==='Mafia'){pill.textContent='Mafia';pill.classList.add('mafia');}
+    else if(p.role==='Sheriff'){pill.textContent='Sheriff';pill.classList.add('sheriff');}
+    else if(p.role==='Nurse'){pill.textContent='Nurse';pill.classList.add('nurse');}
+    else {pill.textContent='Citizen';pill.classList.add('citizen');}
+    right.appendChild(pill);
+    row.appendChild(left);row.appendChild(right);
+    fullList.appendChild(row);
+  });
+}
+
+// Restart handlers
+restartBtn.addEventListener('click',()=>{if(confirm('Restart and reshuffle roles?')) location.reload();});
+finalRestart.addEventListener('click',()=>{location.reload();});
+
+// small UX: keyboard-friendly
+playerCountInput.addEventListener('keydown',(e)=>{if(e.key==='Enter'){generateNames.click();}});
+
+</script>
+</body>
+</html>
