@@ -48,6 +48,12 @@
     .controls{display:flex;justify-content:space-between;align-items:center;margin-top:12px}
     .btn{padding:12px 16px;border-radius:12px;border:none;background:var(--accent);color:#071017;font-weight:700;cursor:pointer;letter-spacing:0.6px}
     .btn.ghost{background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,0.03)}
+    /* reset button (quick visual match with quick-fill chips) */
+    #resetBtn{background:#f1cd5a;color:#071017;border:1px solid rgba(0,0,0,0.08)}
+
+    /* quick-fill chips */
+    .quick-fill{margin-top:12px;display:flex;flex-wrap:wrap;gap:8px}
+    .chip{background:#f1cd5a;border:1px solid rgba(0,0,0,0.08);padding:8px 12px;border-radius:999px;cursor:pointer;font-weight:700;color:#071017}
 
     /* Reveal stage */
     .stage{flex:1;display:grid;place-items:center;text-align:center;padding:22px;border-radius:12px}
@@ -58,11 +64,18 @@
     /* Checklist */
     .checklist{display:flex;flex-direction:column;gap:10px;padding:8px;margin-top:12px}
     .player-row{display:flex;justify-content:space-between;padding:14px;border-radius:10px;background:rgba(255,255,255,0.02);align-items:center}
+    .player-left{display:flex;align-items:center;gap:12px}
+    .player-checkbox{width:18px;height:18px;border-radius:4px;border:1px solid rgba(255,255,255,0.06);background:transparent;cursor:pointer}
+    .player-name{font-weight:600}
     .role-pill{font-size:13px;padding:6px 12px;border-radius:999px;font-weight:700}
     .mafia{color:#fff;background:rgba(255,40,40,0.12);border-left:4px solid #ff4b4b}
     .sheriff{color:#fff;background:rgba(60,140,255,0.06);border-left:4px solid #3b82f6}
     .nurse{color:#fff;background:rgba(40,220,120,0.06);border-left:4px solid #22c55e}
     .citizen{color:var(--muted)}
+
+    /* dead state: strike name and dim role */
+    .player-row.dead .player-name{ text-decoration: line-through; opacity:0.55; color:var(--muted) }
+    .player-row.dead .role-pill{ opacity:0.55 }
 
     footer{display:flex;justify-content:space-between;align-items:center;margin-top:6px}
     .small{font-size:12px;color:var(--muted)}
@@ -84,7 +97,6 @@
       </div>
 
       <button class="gun-btn" id="startBtn" title="Begin">
-        <!-- external PNG gun icon - place gunicon.png next to this HTML file -->
         <img src="gunicon.png" alt="gun icon" class="gun-img" onerror="this.style.opacity=.5">
       </button>
 
@@ -110,6 +122,10 @@
 
       <form id="namesForm" class="card" onsubmit="return false;">
         <div id="namesContainer" class="names" aria-live="polite"></div>
+
+        <!-- quick fill preset names -->
+        <div id="quickFill" class="quick-fill" aria-hidden="false"></div>
+
         <div style="display:flex;justify-content:flex-end;margin-top:12px">
           <button id="enterBtn" class="btn" type="submit">Enter</button>
         </div>
@@ -149,6 +165,7 @@
           <div class="small">Colors: <span style="color:#ff4b4b">Mafia</span> · <span style="color:#3b82f6">Sheriff</span> · <span style="color:#22c55e">Nurse</span></div>
           <div style="display:flex;gap:8px">
             <button id="showListBtn" class="btn ghost">Show full list</button>
+            <button id="resetBtn" class="btn ghost">Reset</button>
             <button id="finalRestart" class="btn">New game</button>
           </div>
         </div>
@@ -186,15 +203,26 @@ const progressCount = document.getElementById('progressCount');
 const revealListBtn = document.getElementById('revealListBtn');
 const restartBtn = document.getElementById('restartBtn');
 const showListBtn = document.getElementById('showListBtn');
+const resetBtn = document.getElementById('resetBtn');
 const finalRestart = document.getElementById('finalRestart');
 const fullList = document.getElementById('fullList');
+const quickFill = document.getElementById('quickFill');
+
+// preset quick-fill names (from your list)
+const presetNames = ['Ashley','Carlene','Ericka','Gyle','Hydyne','Jack','Jenna','Soyul','Venice'];
 
 // helpers
 function showPage(el){[landing,setup,reveal,checklist].forEach(p=>p.classList.remove('active'));el.classList.add('active');window.scrollTo({top:0,behavior:'smooth'});}
 
-function createNameFields(count){namesContainer.innerHTML='';for(let i=0;i<count;i++){const wrapper=document.createElement('div');const input=document.createElement('input');input.type='text';input.placeholder='Player '+(i+1);input.id='p-'+i;input.required=true;input.autocomplete='off';wrapper.appendChild(input);namesContainer.appendChild(wrapper);} }
+function createNameFields(count){namesContainer.innerHTML='';for(let i=0;i<count;i++){const wrapper=document.createElement('div');const input=document.createElement('input');input.type='text';input.placeholder='Player '+(i+1);input.id='p-'+i;input.required=true;input.autocomplete='off';wrapper.appendChild(input);namesContainer.appendChild(wrapper);} renderQuickFill();}
 
 function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}return arr}
+
+// render quick-fill chips
+function renderQuickFill(){ quickFill.innerHTML=''; presetNames.forEach(name=>{const chip=document.createElement('button');chip.type='button';chip.className='chip';chip.textContent=name;chip.addEventListener('click',()=>{ autofillNextEmpty(name); }); quickFill.appendChild(chip); }); }
+
+// autofill next empty name input with given name
+function autofillNextEmpty(name){const inputs = Array.from(namesContainer.querySelectorAll('input'));const next = inputs.find(i=>i.value.trim()==='');if(next){next.value = name; next.focus();} }
 
 // landing -> setup
 startBtn.addEventListener('click',()=>{showPage(setup);createNameFields(parseInt(playerCountInput.value||5));});
@@ -309,21 +337,42 @@ function animatePulse(el){el.animate([{transform:'scale(1)', opacity:0.92},{tran
 revealListBtn.addEventListener('click',()=>{buildFullList();showPage(checklist);});
 showListBtn.addEventListener('click',()=>{buildFullList();});
 
+// Reset: reshuffle roles with same players and return to reveal stage
+resetBtn.addEventListener('click',()=>{
+  if(!players.length){alert('No players to reset.');return;}
+  if(!confirm('Reset roles with the same players? This will reshuffle roles and return to the reveal screen.')) return;
+  const names = players.map(p=>p.name);
+  setupRoles(names);
+  showRevealStage();
+});
+
 function buildFullList(){
   fullList.innerHTML = '';
   // keep original players order for clarity
-  players.forEach(p=>{
-    const row = document.createElement('div');row.className='player-row';
-    const left = document.createElement('div');left.textContent = p.name;left.style.fontWeight='600';
+  players.forEach((p, idx)=>{
+    const row = document.createElement('div'); row.className='player-row';
+    const left = document.createElement('div'); left.className = 'player-left';
+    const checkbox = document.createElement('input'); checkbox.type='checkbox'; checkbox.className='player-checkbox'; checkbox.id = 'chk-'+idx; checkbox.setAttribute('aria-label', 'Mark '+p.name+' as dead');
+    const nameSpan = document.createElement('div'); nameSpan.className='player-name'; nameSpan.textContent = p.name;
+
+    left.appendChild(checkbox);
+    left.appendChild(nameSpan);
+
     const right = document.createElement('div');
-    const pill = document.createElement('div');pill.className='role-pill';
+    const pill = document.createElement('div'); pill.className='role-pill';
     if(p.role==='Mafia'){pill.textContent='Mafia';pill.classList.add('mafia');}
     else if(p.role==='Sheriff'){pill.textContent='Sheriff';pill.classList.add('sheriff');}
     else if(p.role==='Nurse'){pill.textContent='Nurse';pill.classList.add('nurse');}
     else {pill.textContent='Citizen';pill.classList.add('citizen');}
     right.appendChild(pill);
-    row.appendChild(left);row.appendChild(right);
+
+    row.appendChild(left); row.appendChild(right);
     fullList.appendChild(row);
+
+    // checkbox toggles dead state (strike name + dim role)
+    checkbox.addEventListener('change', ()=>{
+      row.classList.toggle('dead', checkbox.checked);
+    });
   });
 }
 
